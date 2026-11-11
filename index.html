@@ -1,0 +1,596 @@
+
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JOC DE MEMÒRIA - ANIMALS</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #f3f4f6;
+  color: #17202a;
+  text-align: center;
+}
+
+h1 {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  margin-bottom: 10px;
+}
+
+.instruccions {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  max-width: 750px;
+  margin: 0 auto 20px;
+}
+
+.estadistiques {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 20px auto;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.estadistiques div {
+  background: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: 2px solid #c8d0d9;
+}
+
+#tauler {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 14px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.carta {
+  height: 155px;
+  border: 4px solid #98a2b3;
+  border-radius: 14px;
+  background: #175cd3;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: bold;
+  transition: background .2s, border-color .2s;
+  overflow: hidden;
+}
+
+.carta.girada {
+  background: white;
+  border-color: #175cd3;
+}
+
+.carta.trobada {
+  background: #d1fadf;
+  border-color: #16794b;
+  cursor: default;
+}
+
+.carta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carta .interrogant {
+  font-size: 3.5rem;
+}
+
+#zonaResposta {
+  display: none;
+  max-width: 650px;
+  margin: 25px auto;
+  padding: 20px;
+  background: white;
+  border: 3px solid #175cd3;
+  border-radius: 15px;
+}
+
+#zonaResposta img {
+  width: 220px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+  margin: 0 auto 15px;
+}
+
+#zonaResposta h2 {
+  margin: 10px 0;
+}
+
+#resposta {
+  width: 90%;
+  max-width: 400px;
+  padding: 14px;
+  font-size: 1.4rem;
+  text-align: center;
+  text-transform: uppercase;
+  border: 2px solid #98a2b3;
+  border-radius: 10px;
+  margin: 10px auto;
+}
+
+button.accio {
+  border: 0;
+  border-radius: 10px;
+  padding: 13px 18px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 6px;
+}
+
+#corregir {
+  background: #175cd3;
+  color: white;
+}
+
+#reiniciar {
+  background: #e4e7ec;
+  color: #17202a;
+}
+
+#pdf {
+  background: #16794b;
+  color: white;
+}
+
+#missatge {
+  min-height: 30px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-top: 10px;
+}
+
+.correcte { color: #16794b; }
+.incorrecte { color: #b42318; }
+
+#final {
+  display: none;
+  margin: 25px auto;
+  padding: 20px;
+  background: #d1fadf;
+  border: 3px solid #16794b;
+  border-radius: 12px;
+  max-width: 600px;
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+@media (max-width: 750px) {
+  #tauler {
+    grid-template-columns: repeat(4, minmax(65px, 1fr));
+    gap: 9px;
+  }
+
+  .carta {
+    height: 120px;
+  }
+}
+
+@media (max-width: 450px) {
+  #tauler {
+    grid-template-columns: repeat(3, minmax(65px, 1fr));
+  }
+
+  .carta {
+    height: 105px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>JOC DE MEMÒRIA: ELS ANIMALS</h1>
+
+<p class="instruccions">
+  1. GIRA DUES TARGETES I BUSCA LES PARELLES IGUALS.<br>
+  2. QUAN TROBIS UNA PARELLA, ESCRIU EL NOM DE L'ANIMAL.<br>
+  3. TENS 3 INTENTS PER ESCRIURE'L CORRECTAMENT!
+</p>
+
+<div class="estadistiques">
+  <div>PARELLES: <span id="comptador">0</span> / 10</div>
+  <div>INTENTS: <span id="intentsTotals">0</span></div>
+</div>
+
+<main id="tauler"></main>
+
+<section id="zonaResposta">
+  <h2>QUIN ANIMAL ÉS?</h2>
+  <img id="imatgeResposta" src="" alt="Animal">
+  <p>ESCRIU EL NOM DE L'ANIMAL:</p>
+  <input id="resposta" type="text" autocomplete="off" placeholder="ESCRIU AQUÍ">
+  <br>
+  <button id="corregir" class="accio" type="button">CORREGIR</button>
+  <p id="missatge"></p>
+  <p>INTENTS RESTANTS: <span id="intentsRestants">3</span></p>
+</section>
+
+<div id="final">
+  MOLT BÉ! HAS TROBAT I IDENTIFICAT TOTS ELS ANIMALS!
+</div>
+
+<div style="margin: 25px auto;">
+  <button id="reiniciar" class="accio" type="button">TORNAR A COMENÇAR</button>
+  <button id="pdf" class="accio" type="button">DESCARREGAR RESULTATS EN PDF</button>
+</div>
+
+<script>
+const animals = [
+  {
+    nom: "POLLET",
+    imatge: "https://blocs.xtec.cat/oupollet2017/files/2017/03/cropped-fotomural-pollito-y-cascara-de-huevo.jpg"
+  },
+  {
+    nom: "GALLINA",
+    imatge: "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=700&q=80"
+  },
+  {
+    nom: "PAPAGAI",
+    imatge: "https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=700&q=80"
+  },
+  {
+    nom: "FLAMENC",
+    imatge: "https://images.unsplash.com/photo-1497206365907-f5e630693df0?auto=format&fit=crop&w=700&q=80"
+  },
+  {
+    nom: "CARGOL",
+    imatge: "https://www.enciclopedia.cat/sites/default/files/media/FOTO2/cargol_bover.png"
+  },
+  {
+    nom: "ARANYA",
+    imatge: "https://upload.wikimedia.org/wikipedia/commons/f/f1/Araneus_diadematus_%28aka%29.jpg"
+  },
+  {
+    nom: "MARIETA",
+    imatge: "https://www.socpetit.cat/wp-content/uploads/2021/07/marietta.jpg.webp"
+  },
+  {
+    nom: "MOSQUIT",
+    imatge: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuAbRqUnQxhCOXt1jvwfXiX6dVrnTjSMjGLNktntbRyw&s=10"
+  },
+  {
+    nom: "LLAGOSTA",
+    imatge: "https://upload.wikimedia.org/wikipedia/commons/3/31/Wanderheuschrecke-03.jpg"
+  },
+  {
+    nom: "SERP",
+    imatge: "https://images.unsplash.com/photo-1531386151447-fd76ad50012f?auto=format&fit=crop&w=700&q=80"
+  }
+];
+
+const tauler = document.getElementById("tauler");
+const zonaResposta = document.getElementById("zonaResposta");
+const imatgeResposta = document.getElementById("imatgeResposta");
+const campResposta = document.getElementById("resposta");
+const missatge = document.getElementById("missatge");
+
+let cartes = [];
+let primera = null;
+let segona = null;
+let bloquejat = false;
+let animalActual = null;
+let intentsActuals = 0;
+let intentsTotals = 0;
+let parellesTrobades = 0;
+let temporitzador = null;
+
+let resultats = [];
+
+function barreja(llista) {
+  const copia = [...llista];
+
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+  }
+
+  return copia;
+}
+
+function normalitza(text) {
+  return text
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z]/g, "");
+}
+
+function creaJoc() {
+  clearTimeout(temporitzador);
+
+  tauler.innerHTML = "";
+  cartes = [];
+  primera = null;
+  segona = null;
+  bloquejat = false;
+  animalActual = null;
+  intentsActuals = 0;
+  intentsTotals = 0;
+  parellesTrobades = 0;
+
+  zonaResposta.style.display = "none";
+  document.getElementById("final").style.display = "none";
+  document.getElementById("comptador").textContent = "0";
+  document.getElementById("intentsTotals").textContent = "0";
+
+  resultats = animals.map(animal => ({
+    nom: animal.nom,
+    resposta: "",
+    intents: 0,
+    estat: "PENDENT"
+  }));
+
+  const duplicats = animals.flatMap((animal, index) => [
+    { animal, index },
+    { animal, index }
+  ]);
+
+  cartes = barreja(duplicats);
+
+  cartes.forEach((dada, posicio) => {
+    const carta = document.createElement("button");
+    carta.type = "button";
+    carta.className = "carta";
+    carta.setAttribute("aria-label", "Targeta tapada");
+    carta.innerHTML = '<span class="interrogant">?</span>';
+
+    carta.addEventListener("click", () => giraCarta(carta, dada));
+
+    tauler.appendChild(carta);
+    dada.element = carta;
+  });
+}
+
+function mostraCarta(carta, dada) {
+  carta.classList.add("girada");
+  carta.innerHTML = `
+    <img src="${dada.animal.imatge}" alt="${dada.animal.nom}"
+    onerror="this.style.display='none'; this.parentElement.innerHTML='🐾';">
+  `;
+}
+
+function amagaCarta(carta) {
+  carta.classList.remove("girada");
+  carta.innerHTML = '<span class="interrogant">?</span>';
+}
+
+function giraCarta(carta, dada) {
+  if (bloquejat) return;
+  if (carta.classList.contains("girada")) return;
+  if (carta.classList.contains("trobada")) return;
+
+  mostraCarta(carta, dada);
+
+  if (!primera) {
+    primera = { carta, dada };
+    return;
+  }
+
+  segona = { carta, dada };
+  bloquejat = true;
+
+  if (primera.dada.index === segona.dada.index) {
+    animalActual = primera.dada.index;
+    mostraZonaResposta();
+  } else {
+    missatge.textContent = "";
+    temporitzador = setTimeout(() => {
+      amagaCarta(primera.carta);
+      amagaCarta(segona.carta);
+      primera = null;
+      segona = null;
+      bloquejat = false;
+    }, 1100);
+  }
+}
+
+function mostraZonaResposta() {
+  intentsActuals = 0;
+
+  const animal = animals[animalActual];
+
+  zonaResposta.style.display = "block";
+  imatgeResposta.src = animal.imatge;
+  imatgeResposta.alt = animal.nom;
+  campResposta.value = "";
+  campResposta.disabled = false;
+
+  missatge.textContent = "";
+  missatge.className = "";
+  document.getElementById("intentsRestants").textContent = "3";
+
+  campResposta.focus();
+}
+
+function corregirResposta() {
+  if (animalActual === null) return;
+
+  const resposta = normalitza(campResposta.value);
+
+  if (!resposta) {
+    missatge.textContent = "ESCRIU UNA RESPOSTA!";
+    missatge.className = "incorrecte";
+    return;
+  }
+
+  intentsActuals++;
+  intentsTotals++;
+
+  const resultat = resultats[animalActual];
+  resultat.intents++;
+  resultat.resposta = campResposta.value;
+
+  document.getElementById("intentsTotals").textContent = intentsTotals;
+
+  if (resposta === normalitza(animals[animalActual].nom)) {
+    missatge.textContent = "MOLT BÉ! HO HAS ENCERTAT!";
+    missatge.className = "correcte";
+
+    resultat.estat = "CORRECTE";
+
+    primera.carta.classList.add("trobada");
+    segona.carta.classList.add("trobada");
+
+    primera.carta.disabled = true;
+    segona.carta.disabled = true;
+
+    parellesTrobades++;
+    document.getElementById("comptador").textContent = parellesTrobades;
+
+    campResposta.disabled = true;
+
+    setTimeout(() => {
+      zonaResposta.style.display = "none";
+      primera = null;
+      segona = null;
+      animalActual = null;
+      bloquejat = false;
+
+      if (parellesTrobades === animals.length) {
+        document.getElementById("final").style.display = "block";
+      }
+    }, 1200);
+
+  } else {
+    const restants = 3 - intentsActuals;
+
+    document.getElementById("intentsRestants").textContent = restants;
+
+    if (restants > 0) {
+      missatge.textContent = "NO ÉS CORRECTE. TORNA-HO A PROVAR!";
+      missatge.className = "incorrecte";
+      campResposta.value = "";
+      campResposta.focus();
+    } else {
+      missatge.textContent = "HAS ESGOTAT ELS 3 INTENTS. TORNA A BUSCAR LA PARELLA!";
+      missatge.className = "incorrecte";
+
+      resultat.estat = "NO RESOLT";
+
+      setTimeout(() => {
+        amagaCarta(primera.carta);
+        amagaCarta(segona.carta);
+
+        zonaResposta.style.display = "none";
+        primera = null;
+        segona = null;
+        animalActual = null;
+        bloquejat = false;
+      }, 1800);
+    }
+  }
+}
+
+document.getElementById("corregir").addEventListener("click", corregirResposta);
+
+campResposta.addEventListener("keydown", event => {
+  if (event.key === "Enter") corregirResposta();
+});
+
+document.getElementById("reiniciar").addEventListener("click", () => {
+  if (confirm("VOLS TORNAR A COMENÇAR L'ACTIVITAT? ES PERDRAN ELS RESULTATS ACTUALS.")) {
+    creaJoc();
+  }
+});
+
+document.getElementById("pdf").addEventListener("click", () => {
+  if (!window.jspdf) {
+    alert("NO S'HA POGUT CARREGAR EL GENERADOR DE PDF. TORNA-HO A PROVAR.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  let y = 20;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("RESULTATS DEL JOC DE MEMORIA", 15, y);
+
+  y += 12;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text("Activitat: Els animals (21-30)", 15, y);
+
+  y += 8;
+  doc.text("Data: " + new Date().toLocaleDateString("ca-ES"), 15, y);
+
+  y += 14;
+
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("RESUM", 15, y);
+
+  y += 9;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text("Parelles trobades: " + parellesTrobades + " de 10", 15, y);
+
+  y += 7;
+  doc.text("Intents totals: " + intentsTotals, 15, y);
+
+  y += 14;
+
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("RESULTATS PER ANIMAL", 15, y);
+
+  y += 10;
+
+  resultats.forEach((r, index) => {
+    if (y > 275) {
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text((index + 1) + ". " + r.nom, 15, y);
+
+    y += 6;
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Resposta: " + (r.resposta || "Sense resposta"), 20, y);
+
+    y += 6;
+    doc.text("Intents: " + r.intents, 20, y);
+
+    y += 6;
+    doc.text("Estat: " + r.estat, 20, y);
+
+    y += 9;
+  });
+
+  doc.save("resultats_joc_memoria_animals_21_30.pdf");
+});
+
+creaJoc();
+</script>
+
+</body>
+</html>
